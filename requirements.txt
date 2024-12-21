@@ -4,3 +4,4 @@ flask_sqlalchemy
 networkx
 geopy
 flask_cors
+folium
