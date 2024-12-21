@@ -27,7 +27,7 @@ function submitDustbin() {
     capacity: capacity
   };
   
-  fetch('http://localhost:5000/create_dustbin', {
+  fetch('http://127.0.0.1:5000/create_dustbin', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -49,7 +49,7 @@ function submitDustbin() {
 }
 
 function loadDustbins() {
-  fetch('http://localhost:5000/dustbins')
+  fetch('http://127.0.0.1:5000/dustbins')
   .then(function(response) {
     if (response.ok) {
       return response.json();
@@ -75,8 +75,8 @@ function loadDustbins() {
   dustbinsContainer.appendChild(dustbinElement);
   
   // Add markers to the map with labels from the server
-  var marker = L.marker([dustbin.latitude, dustbin.longitude]).addTo(map);
-  marker.bindPopup('ID: ' + dustbin.id); // Add ID label to the marker
+  // var marker = L.marker([dustbin.latitude, dustbin.longitude]).addTo(map);
+  // marker.bindPopup('ID: ' + dustbin.id); // Add ID label to the marker
     });
   })
   .catch(function(error) {
@@ -96,7 +96,7 @@ function modifyDustbin(id) {
       capacity: capacity
     };
     
-    fetch(`http://localhost:5000/update_dustbin/${id}`, {
+    fetch(`http://127.0.0.1:5000/update_dustbin/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -117,8 +117,10 @@ function modifyDustbin(id) {
   }
 }
 
+
+
 function calculateOptimizedRoute() {
-  fetch('http://localhost:5000/dustbins')
+  fetch('http://127.0.0.1:5000/dustbins')
   .then(function(response) {
     if (response.ok) {
       return response.json();
@@ -141,7 +143,7 @@ function calculateOptimizedRoute() {
       dustbins: dustbinsWithCoords
     };
 
-    fetch('http://localhost:5000/plan_optimized_route', {
+    return fetch('http://127.0.0.1:5000/plan_optimized_route', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -164,9 +166,16 @@ function calculateOptimizedRoute() {
       var optimizedRouteSequence = optimizedRoute.join(' -> ');
       document.getElementById('optimizedRouteSequence').textContent = optimizedRouteSequence;
 
+      const iframe = document.getElementById("mapContainer").querySelector("iframe");
+      if (iframe) {
+        iframe.src = "http://127.0.0.1:5501/backend/route_map.html";
+      }
+    
+    
       // Draw polyline for optimized route
-      var optimizedRoutePolyline = L.polyline(optimizedRouteCoords, {color: 'red'}).addTo(map);
-      map.fitBounds(optimizedRoutePolyline.getBounds());
+      // var optimizedRoutePolyline = L.polyline(optimizedRouteCoords, {color: 'red'}).addTo(map);
+      // map.fitBounds(optimizedRoutePolyline.getBounds());
+
     })
     .catch(function(error) {
       alert('An error occurred: ' + error);
@@ -179,7 +188,7 @@ function calculateOptimizedRoute() {
 
 function deleteDustbin(id) {
   if (confirm("Are you sure you want to delete this dustbin?")) {
-      fetch(`http://localhost:5000/delete_dustbin/${id}`, {
+      fetch(`http://127.0.0.1:5000/delete_dustbin/${id}`, {
           method: 'DELETE'
       })
       .then(function(response) {

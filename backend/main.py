@@ -2,14 +2,50 @@ from flask import request, jsonify
 from config import app, db
 from models import Dustbin
 import aux_functions
-import thingspeak
+import thingspeak, os
+from flask import send_from_directory, Flask, send_file
+
+@app.route("/")
+def serve_frontend():
+    return send_from_directory("../frontend", "index.html")
+
+# Serve static assets
+@app.route("/<path:path>")
+def serve_static(path):
+    return send_from_directory("../frontend", path)
+
+# @app.route("/plan_optimized_route", methods=["POST"])
+# def plan_optimized_route_handler():
+#     dustbins_data = request.json.get("dustbins")
+#     dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
+#     optimized_route = aux_functions.plan_optimized_route(dustbins)
+#     return jsonify({"optimized_route": optimized_route}), 200
 
 @app.route("/plan_optimized_route", methods=["POST"])
 def plan_optimized_route_handler():
     dustbins_data = request.json.get("dustbins")
     dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
     optimized_route = aux_functions.plan_optimized_route(dustbins)
+    
+    """
+        input change to 3 params : [lat(float), long(float), deadline(minutes/hours/int)]
+        tom_tom_api call with
+            input params : [lat, long, unit(kmph), openLR(static), key(secret key)]
+            output : [flow_segment_data : {"free_flow_speed":"", "current_speed": ""}]
+            
+        current_speed:
+        
+
+
+    """
+
+    
     return jsonify({"optimized_route": optimized_route}), 200
+
+@app.route("/route_map")
+def serve_route_map():
+    return send_from_directory(directory='backend', path='route_map.html')
+    
 
 @app.route("/dustbins", methods=["GET"])
 def get_dustbins():
@@ -70,18 +106,24 @@ def delete_dustbin(user_id):
 
 def create_dustbin_from_thingspeak():
     latitude,longitude,capacity = thingspeak.dustbins()
+    print(latitude)
     new_dustbin = Dustbin(latitude=latitude, longitude=longitude, capacity=capacity)
     try:
         db.session.add(new_dustbin)
         db.session.commit()
+        print("commited Dustbin")
     except Exception as e:
         return jsonify({"message": str(e)}), 400
 
+    print("control reaching here")
     return jsonify({"message": "Dustbin created!"}), 201
 
 if __name__ == "__main__":
     with app.app_context():
+        db.drop_all()
         db.create_all()
+        print("Done 1")
         create_dustbin_from_thingspeak()
+        print("Done 2")
     
     app.run(debug=True)

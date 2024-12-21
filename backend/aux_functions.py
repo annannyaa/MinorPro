@@ -1,6 +1,12 @@
 import networkx as nx
 from geopy.distance import geodesic
 import itertools
+import random
+import folium
+import requests
+
+API_KEY = "TkJNeMv0lEO00urfRPxkgCbaZvHpHCYp"
+
 def plan_optimized_route(dustbins):
     """
     Plan optimized route for waste collection based on dustbin coordinates and capacities.
@@ -52,6 +58,70 @@ def plan_optimized_route(dustbins):
         print("Path Length:", optimal_path[1])
     else:
         print("No feasible path found.")
-        
+
+    bins = []
+    for bin in list(optimal_path[0]):
+        bins.append((dustbins[bin][0], dustbins[bin][1]))
+    generate_map_html(bins)
+
     #print(optimized_route)
     return list(optimal_path[0])
+
+def get_coordinates(source, destination):
+    # TomTom API endpoint
+    url = f"https://api.tomtom.com/routing/1/calculateRoute/{source[0]},{source[1]}:{destination[0]},{destination[1]}/json"
+
+    # Parameters for the API request
+    params = {
+        "key": API_KEY,
+        "routeType": "fastest",
+        "travelMode": "car"
+    }
+
+    # Make API request
+    response = requests.get(url, params=params)
+
+    # Check response status
+    if response.status_code == 200:
+        data = response.json()
+        # Extract route geometry (polyline of the route)
+        route_points = data["routes"][0]["legs"][0]["points"]
+        coordinates = [(point["latitude"], point["longitude"]) for point in route_points]
+    else:
+        print("Error:", response.status_code, response.text)
+        exit()
+
+    return coordinates
+
+def generate_map_html(transit_points = []):
+    # Plot the route using folium
+    # Start with the source location
+    if len(transit_points) == 0:
+        return
+
+    map_route = folium.Map(location=transit_points[0], zoom_start=6)
+    colour_list = ["green", "blue", "yellow", "orange", "ping", "purple", "grey", "black", "brown"]
+
+    # Add markers
+    for idx, transit in enumerate(transit_points):
+        if idx == 0:
+            folium.Marker(location=transit, popup="Source", icon=folium.Icon(color="red")).add_to(map_route)
+        elif idx == len(transit_points) - 1:
+            folium.Marker(location=transit, popup="Destination", icon=folium.Icon(color="red")).add_to(map_route)
+        else:
+            folium.Marker(location=transit, popup="Transit", icon=folium.Icon(color=random.choice(colour_list))).add_to(map_route)
+
+    colour_list = ["green", "yellow", "orange", "ping", "purple", "grey", "black", "brown"]
+
+    # Add the route line
+    for idx, transit in enumerate(transit_points):
+        if idx == len(transit_points) - 1:
+            break
+        if idx == 0:
+            folium.PolyLine(locations=get_coordinates(transit_points[idx], transit_points[idx+1]), color="blue", weight=5).add_to(map_route)
+        else:
+            folium.PolyLine(locations=get_coordinates(transit_points[idx], transit_points[idx+1]), color=random.choice(colour_list), weight=5).add_to(map_route)
+
+    # Save map to HTML and display
+    map_route.save("route_map.html")
+    print("Map saved as route_map.html. Open it in your browser.")
