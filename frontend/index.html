@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dustbin Management System</title>
+<title>Fleet Management System</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
 <div class="container">
-  <h2>Dustbin Management System</h2>
+  <h2>Fleet Management System</h2>
   <form id="dustbinForm">
     <div class="form-group">
       <label for="latitude">Latitude:</label>
@@ -21,17 +21,18 @@
       <input type="text" id="longitude" name="longitude" required>
     </div>
     <div class="form-group">
-      <label for="capacity">Capacity:</label>
+      <label for="capacity">Deadline:</label>
       <input type="text" id="capacity" name="capacity" required>
     </div>
-    <button type="submit">Add Dustbin</button>
+    <br>
+    <button class="wow" type="submit">Add Destination</button>
   </form>
-  <h2>Available Dustbins</h2>
+  <h2>Available Destinations</h2>
   <div id="dustbinsContainer" style="margin-top: 20px;">
   </div>
   <h2>Optimized Route</h2>
   <div id="optimizedRouteContainer" style="margin-top: 20px;">
-    <button id="calculateRouteButton">Calculate Optimized Route</button>
+    <button class="wow" id="calculateRouteButton">Calculate Optimized Route</button>
     <!-- EXTRA START -->
     <!-- <input type="number" id="numVehicles" placeholder="Enter number of vehicles" min="1" />
     <button id="calculateRouteButton">Calculate Routes</button> -->

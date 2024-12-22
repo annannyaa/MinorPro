@@ -1,71 +1,121 @@
-import networkx as nx
-from geopy.distance import geodesic
-import itertools
-import random
-import folium
 import requests
-
+import networkx as nx
+from datetime import datetime, timedelta, time
+from math import radians, sin, cos, sqrt, atan2
+from queue import PriorityQueue
+from flask import jsonify, request
+import folium
+import random
 API_KEY = "TkJNeMv0lEO00urfRPxkgCbaZvHpHCYp"
 
-def plan_optimized_route(dustbins):
-    """
-    Plan optimized route for waste collection based on dustbin coordinates and capacities.
-    Returns the sequence of dustbin IDs in the optimized order.
-    """
-    # Simple greedy algorithm for TSP
-    # Start from the first dustbin and find the closest dustbin iteratively
-    print(dustbins)
-    dict={}
-    for i in range(len(dustbins)):
-        dict[i]={}
-        dict[i]['latitude']=dustbins[i][0]
-        dict[i]['longitude']=dustbins[i][1]
-        dict[i]['capacity']=dustbins[i][2]
-    print(dict)
-        
-    # Create a weighted graph
-    G = nx.Graph()
+class RoutingOptimizer:
+    def __init__(self, tomtom_api_key):
+        self.tomtom_api_key = tomtom_api_key
+        self.base_url_traffic = "https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json?point="
+        self.base_url_route = "https://api.tomtom.com/routing/1/calculateRoute/"
+        self.extra_route = "/json?&vehicleHeading=90&sectionType=traffic&report=effectiveSettings&routeType=eco&traffic=true&travelMode=car&vehicleMaxSpeed=120&vehicleCommercial=false&vehicleEngineType=combustion&key="
+        self.cache = {}
 
-    # Add nodes to the graph
-    for bin_id, attrs in dict.items():
-        G.add_node(bin_id, **attrs)
+    def calculate_time_priority(self, current_time, deadline):
+        time_to_deadline = (deadline - current_time).total_seconds() / 3600
+        return max(0, min(1, 1 - (time_to_deadline / 24)))
 
-    # Calculate and add weighted edges to the graph considering effective capacity
-    for start, start_attrs in dict.items():
-        for end, end_attrs in dict.items():
-            if start != end:
-                dist = geodesic((start_attrs['latitude'], start_attrs['longitude']), (end_attrs['latitude'], end_attrs['longitude'])).kilometers
-                start_remaining = start_attrs['capacity']
-                end_remaining = end_attrs['capacity']
-                weight = dist / min(start_remaining, end_remaining)
-                G.add_edge(start, end, weight=weight)
+    def get_route_details(self, start_coords, end_coords):
+        cache_key = (start_coords, end_coords)
+        if cache_key in self.cache:
+            return self.cache[cache_key]
 
-    # Find the optimal path visiting all bins in the network
-    all_bins = list(dict.keys())
-    all_paths = []
-    starting_bin = max(dict, key=lambda x: dict[x]['capacity'])  # Start from the most filled bin
-    for perm in itertools.permutations(all_bins, len(all_bins)):
-        if perm[0] == starting_bin:
+        try:
+            start_lat, start_long = start_coords
+            end_lat, end_long = end_coords
+
+            traffic_response = requests.get(
+                f"{self.base_url_traffic}{start_lat}%2C{start_long}&unit=KMPH&openLr=false&key={self.tomtom_api_key}")
+            route_response = requests.get(
+                f"{self.base_url_route}{start_lat},{start_long}:{end_lat},{end_long}{self.extra_route}{self.tomtom_api_key}")
+
+            if traffic_response.status_code == 200 and route_response.status_code == 200:
+                traffic_data = traffic_response.json()
+                route_data = route_response.json()
+
+                route_info = {
+                    'travel_time': route_data['routes'][0]['summary']['travelTimeInSeconds'],
+                    'distance': route_data['routes'][0]['summary']['lengthInMeters'] / 1000,
+                    'current_speed': traffic_data['flowSegmentData']['currentSpeed']
+                }
+
+                self.cache[cache_key] = route_info
+                return route_info
+            else:
+                raise Exception("API error")
+        except Exception as e:
+            print(f"Exception in get_route_details: {e}")
+            return {'travel_time': float('inf'), 'distance': float('inf'), 'current_speed': 0}
+
+    def haversine(self, lat1, lon1, lat2, lon2):
+        R = 6371
+        dlat = radians(lat2 - lat1)
+        dlon = radians(lon2 - lon1)
+        a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return R * c
+
+    def heuristic_cost(self, start_dest, end_dest):
+        geo_distance = self.haversine(start_dest['latitude'], start_dest['longitude'], end_dest['latitude'], end_dest['longitude'])
+        time_priority = max(0.01, self.calculate_time_priority(datetime.now(), start_dest['deadline']))
+        route_info = self.get_route_details((start_dest['latitude'], start_dest['longitude']), (end_dest['latitude'], end_dest['longitude']))
+
+        heuristic_value = (
+            geo_distance * 0.3 +
+            (1 / time_priority) * 0.4 +
+            (route_info['travel_time'] / 3600) * 0.3
+        )
+
+        return heuristic_value
+
+    def a_star(self, destinations):
+        # Initialize nodes and graph
+        G = nx.DiGraph()
+        for i, dest in enumerate(destinations):
+            G.add_node(i, **dest)
+
+        for start_idx, start_dest in enumerate(destinations):
+            for end_idx, end_dest in enumerate(destinations):
+                if start_idx != end_idx:
+                    heuristic_weight = self.heuristic_cost(start_dest, end_dest)
+                    G.add_edge(start_idx, end_idx, weight=heuristic_weight)
+
+        all_paths = []
+        for start in range(len(destinations)):
             try:
-                path_length = sum(nx.astar_path_length(G, perm[i], perm[i + 1], weight='weight') for i in range(len(perm) - 1))
-                all_paths.append((perm, path_length))
-            except nx.NetworkXNoPath:
-                pass
+                current_path = [start]
+                unvisited = set(range(len(destinations))) - {start}
 
-    if all_paths:
-        optimal_path = min(all_paths, key=lambda x: x[1])
-        print("Optimal Path Routing Order considering all bins and their capacities:", list(optimal_path[0]))
-        print("Path Length:", optimal_path[1])
-    else:
-        print("No feasible path found.")
+                while unvisited:
+                    next_dest = min(
+                        unvisited,
+                        key=lambda x: self.heuristic_cost(destinations[current_path[-1]], destinations[x])
+                    )
+                    current_path.append(next_dest)
+                    unvisited.remove(next_dest)
 
-    bins = []
-    for bin in list(optimal_path[0]):
-        bins.append((dustbins[bin][0], dustbins[bin][1]))
-    generate_map_html(bins)
+                path_cost = sum(
+                    self.heuristic_cost(destinations[current_path[i]], destinations[current_path[i+1]])
+                    for i in range(len(current_path) - 1)
+                )
 
-    #print(optimized_route)
-    return list(optimal_path[0])
+                all_paths.append((current_path, path_cost))
+
+            except Exception as e:
+                print(f"Error calculating path from {start}: {e}")
+
+        if all_paths:
+            optimal_path, path_cost = min(all_paths, key=lambda x: x[1])
+            return optimal_path
+
+        return None
+
+
 
 def get_coordinates(source, destination):
     # TomTom API endpoint
@@ -92,6 +142,32 @@ def get_coordinates(source, destination):
         exit()
 
     return coordinates
+def string_to_datetime(deadline_str):
+    """Convert a time string in 'HH:MM' format to a datetime object with today's date."""
+    today = datetime.today().date()
+    hour, minute = map(int, deadline_str.split(':'))
+    deadline_time = time(hour, minute)  # Create a time object
+    return datetime.combine(today, deadline_time)  # Combine with today's date
+
+def plan_optimized_route(dustbins):
+    destinations = []
+    for dustbin in dustbins:
+        print(dustbin)
+        latitude, longitude, deadline = dustbin  # Only latitude and longitude, ignoring capacity
+        # deadline = datetime.combine(datetime.today(), time(17, 0))  # Assuming 5:00 PM deadline
+        destinations.append({'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
+
+    optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ')
+    optimized_route = optimizer.a_star(destinations)
+    bins = []
+    print(optimized_route)
+    for bin in list(optimized_route):
+        print(f"Bins : {bin}")
+        print(f"{dustbins[bin][0]}, {dustbins[bin][1]}")
+        bins.append((dustbins[bin][0], dustbins[bin][1]))
+    generate_map_html(bins)
+
+    return optimized_route
 
 def generate_map_html(transit_points = []):
     # Plot the route using folium

@@ -68,7 +68,7 @@ function loadDustbins() {
       <p><strong>ID:</strong> ${dustbin.id}
       <strong>Latitude:</strong> ${dustbin.latitude}
       <strong>Longitude:</strong> ${dustbin.longitude}
-      <strong>Capacity:</strong> ${dustbin.capacity}
+      <strong>Deadline:</strong> ${dustbin.capacity}
       <button onclick="modifyDustbin(${dustbin.id})">Modify</button>
       <button onclick="deleteDustbin(${dustbin.id})">Delete</button></p>
   `;

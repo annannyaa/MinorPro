@@ -5,6 +5,7 @@ import aux_functions
 import thingspeak, os
 from flask import send_from_directory, Flask, send_file
 
+
 @app.route("/")
 def serve_frontend():
     return send_from_directory("../frontend", "index.html")
@@ -77,7 +78,7 @@ def create_dustbin():
 
 @app.route("/update_dustbin/<int:user_id>", methods=["PATCH"])
 def update_dustbin(user_id):
-    dustbin = Dustbin.query.get(user_id)
+    dustbin = session.get(Dustbin, user_id)
 
     if not dustbin:
         return jsonify({"message": "User not found"}), 404
@@ -94,7 +95,7 @@ def update_dustbin(user_id):
 
 @app.route("/delete_dustbin/<int:user_id>", methods=["DELETE"])
 def delete_dustbin(user_id):
-    dustbin = Dustbin.query.get(user_id)
+    dustbin = session.get(Dustbin, user_id)
 
     if not dustbin:
         return jsonify({"message": "Dustbin not found"}), 404
@@ -107,7 +108,7 @@ def delete_dustbin(user_id):
 def create_dustbin_from_thingspeak():
     latitude,longitude,capacity = thingspeak.dustbins()
     print(latitude)
-    new_dustbin = Dustbin(latitude=latitude, longitude=longitude, capacity=capacity)
+    new_dustbin = Dustbin(latitude=latitude, longitude=longitude, capacity='12:30')
     try:
         db.session.add(new_dustbin)
         db.session.commit()

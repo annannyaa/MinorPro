@@ -17,7 +17,7 @@ class DustbinApp:
         self.longitude_entry = tk.Entry(root)
         self.longitude_entry.grid(row=1, column=1, padx=10, pady=5)
         
-        self.capacity_label = tk.Label(root, text="Capacity:")
+        self.capacity_label = tk.Label(root, text="Deadline:")
         self.capacity_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.capacity_entry = tk.Entry(root)
         self.capacity_entry.grid(row=2, column=1, padx=10, pady=5)
@@ -43,10 +43,10 @@ class DustbinApp:
         try:
             response = requests.post("http://127.0.0.1:5000/create_dustbin", json=data)
             if response.status_code == 201:
-                tk.messagebox.showinfo("Success", "Dustbin created successfully!")
+                tk.messagebox.showinfo("Success", "Destination added successfully!")
                 self.clear_fields()
             else:
-                tk.messagebox.showerror("Error", "Failed to create dustbin.")
+                tk.messagebox.showerror("Error", "Failed to add destination.")
         except Exception as e:
             tk.messagebox.showerror("Error", f"An error occurred: {str(e)}")
     

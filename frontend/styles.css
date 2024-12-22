@@ -1,89 +1,99 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-  }
-  
-  .container {
-    width: 50%;
-    margin: 50px auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  h2 {
-    text-align: center;
-  }
-  
-  .form-group {
-    margin-bottom: 20px;
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 5px;
-  }
-  
-  input[type="text"] {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  button[type="submit"] {
-    background-color: #4caf50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  button[type="submit"]:hover {
-    background-color: #45a049;
-  }
-  
-  .dustbin {
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin: 5px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(500px, 3fr));
-  }
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap');
 
-/* Matrix container */
+body {
+  font-family: 'Lora', serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(120deg, #fdfdfd, #e3f2fd);
+  color: #444;
+  line-height: 1.7;
+}
+
+.container {
+  max-width: 800px;
+  margin: 50px auto;
+  background: linear-gradient(145deg, #ffffff, #f9f9f9);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.container:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+h2 {
+  text-align: center;
+  color: #2c7da0;
+  font-weight: 600;
+  font-size: 2rem;
+  background: linear-gradient(to right, #2c7da0, #57c6e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+input[type="text"] {
+  font-family: 'Lora', serif;
+  font-size: 16px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fcfcfc;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="text"]:focus {
+  border-color: #2c7da0;
+  box-shadow: 0 0 8px rgba(44, 125, 160, 0.2);
+}
+
+button[type="submit"], .optimizedRouteContainer .button, .wow {
+  font-family: 'Lora', serif;
+  font-weight: 600;
+  font-size: 16px;
+  background: linear-gradient(145deg, #2c7da0, #57c6e1);
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+button[type="submit"]:hover, .optimizedRouteContainer .button:hover, .wow:hover {
+  background: linear-gradient(145deg, #1e5d74, #2c7da0);
+  transform: translateY(-3px);
+}
+
+/* Dustbin styling */
+.dustbin {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin: 10px 0;
+  background: #e3f2fd;
+  border-radius: 8px;
+}
+
 .matrix-container {
   display: grid;
   grid-gap: 5px;
   margin-top: 20px;
 }
 
-/* Matrix cell */
 .matrix-cell {
-  background-color: #f0f0f0;
+  background-color: #f0f8ff;
   border: 1px solid #ccc;
   padding: 10px;
   text-align: center;
-}
-
-#map {
-  height: 500px;
-  width: 100%;
-}
-
-.optimizedRouteContainer .button{
-  background-color: #4caf50;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.optimizedRouteContainer .button:hover{
-  background-color: #45a049;
 }
