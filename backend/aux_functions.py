@@ -9,8 +9,10 @@ import random
 API_KEY = "TkJNeMv0lEO00urfRPxkgCbaZvHpHCYp"
 
 class RoutingOptimizer:
-    def __init__(self, tomtom_api_key):
+    def __init__(self, tomtom_api_key, hubLatitude, hubLongitude):
         self.tomtom_api_key = tomtom_api_key
+        self.hubLatitude = hubLatitude
+        self.hubLongitude = hubLongitude
         self.base_url_traffic = "https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json?point="
         self.base_url_route = "https://api.tomtom.com/routing/1/calculateRoute/"
         self.extra_route = "/json?&vehicleHeading=90&sectionType=traffic&report=effectiveSettings&routeType=eco&traffic=true&travelMode=car&vehicleMaxSpeed=120&vehicleCommercial=false&vehicleEngineType=combustion&key="
@@ -62,7 +64,11 @@ class RoutingOptimizer:
 
     def heuristic_cost(self, start_dest, end_dest):
         geo_distance = self.haversine(start_dest['latitude'], start_dest['longitude'], end_dest['latitude'], end_dest['longitude'])
-        time_priority = max(0.01, self.calculate_time_priority(datetime.now(), start_dest['deadline']))
+        if start_dest['deadline'] is None or end_dest['deadline'] is None:
+            time_priority = 0.01  # or another default value
+        else:
+            time_priority = max(0.01, self.calculate_time_priority(datetime.now(), start_dest['deadline']))
+        
         route_info = self.get_route_details((start_dest['latitude'], start_dest['longitude']), (end_dest['latitude'], end_dest['longitude']))
 
         heuristic_value = (
@@ -75,6 +81,8 @@ class RoutingOptimizer:
 
     def a_star(self, destinations):
         # Initialize nodes and graph
+        hub = {'latitude': float(self.hubLatitude), 'longitude': float(self.hubLongitude), 'deadline': datetime.now()}
+        destinations.insert(0, hub) 
         G = nx.DiGraph()
         for i, dest in enumerate(destinations):
             G.add_node(i, **dest)
@@ -86,10 +94,10 @@ class RoutingOptimizer:
                     G.add_edge(start_idx, end_idx, weight=heuristic_weight)
 
         all_paths = []
-        for start in range(len(destinations)):
+        for start in range(1, len(destinations)):
             try:
-                current_path = [start]
-                unvisited = set(range(len(destinations))) - {start}
+                current_path = [0]
+                unvisited = set(range(1, len(destinations)))
 
                 while unvisited:
                     next_dest = min(
@@ -149,24 +157,28 @@ def string_to_datetime(deadline_str):
     deadline_time = time(hour, minute)  # Create a time object
     return datetime.combine(today, deadline_time)  # Combine with today's date
 
-def plan_optimized_route(dustbins):
+def plan_optimized_route(dustbins, hubLatitude, hubLongitude):
     destinations = []
     for dustbin in dustbins:
         print(dustbin)
         latitude, longitude, deadline = dustbin  # Only latitude and longitude, ignoring capacity
         # deadline = datetime.combine(datetime.today(), time(17, 0))  # Assuming 5:00 PM deadline
         destinations.append({'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
+    print(f"printing from aux_functions: {hubLatitude} and {hubLongitude}")
 
-    optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ')
+    optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ', hubLatitude, hubLongitude)
     optimized_route = optimizer.a_star(destinations)
     bins = []
-    print(optimized_route)
-    for bin in list(optimized_route):
-        print(f"Bins : {bin}")
-        print(f"{dustbins[bin][0]}, {dustbins[bin][1]}")
-        bins.append((dustbins[bin][0], dustbins[bin][1]))
-    generate_map_html(bins)
-
+    print(f"OPT ROUTE IS {optimized_route}")
+    for bin_index in optimized_route:  
+        print(f"Bins : {bin_index}")
+        if bin_index==0:
+              bins.append((float(hubLatitude),float(hubLongitude)))
+        else:
+            print(f"{dustbins[bin_index-1][0]}, {dustbins[bin_index-1][1]}")  # Use bin_index to access dustbins
+            bins.append((dustbins[bin_index-1][0], dustbins[bin_index-1][1]))
+            
+    generate_map_html(bins)  # Assuming this function takes the bins as coordinates
     return optimized_route
 
 def generate_map_html(transit_points = []):

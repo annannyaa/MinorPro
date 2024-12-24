@@ -4,6 +4,8 @@ from models import Dustbin
 import aux_functions
 import thingspeak, os
 from flask import send_from_directory, Flask, send_file
+hubLatitude = None
+hubLongitude = None
 
 
 @app.route("/")
@@ -15,18 +17,15 @@ def serve_frontend():
 def serve_static(path):
     return send_from_directory("../frontend", path)
 
-# @app.route("/plan_optimized_route", methods=["POST"])
-# def plan_optimized_route_handler():
-#     dustbins_data = request.json.get("dustbins")
-#     dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
-#     optimized_route = aux_functions.plan_optimized_route(dustbins)
-#     return jsonify({"optimized_route": optimized_route}), 200
-
 @app.route("/plan_optimized_route", methods=["POST"])
 def plan_optimized_route_handler():
+    global hubLatitude, hubLongitude
+    if hubLatitude is None or hubLongitude is None:
+        return jsonify({"message": "Hub address not available"}), 400
+    #print(f"Printing from plan_optimized_route_handler: {hubLatitude} and {hubLongitude}")
     dustbins_data = request.json.get("dustbins")
     dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
-    optimized_route = aux_functions.plan_optimized_route(dustbins)
+    optimized_route = aux_functions.plan_optimized_route(dustbins, hubLatitude, hubLongitude)
     
     """
         input change to 3 params : [lat(float), long(float), deadline(minutes/hours/int)]
@@ -53,6 +52,15 @@ def get_dustbins():
     dustbins = Dustbin.query.all()
     json_dustbins = list(map(lambda x: x.to_json(), dustbins))
     return jsonify({"dustbins": json_dustbins})
+
+@app.route("/create_hub", methods=["POST"])
+def print_hub():
+    global hubLatitude, hubLongitude
+    hubLatitude=request.json.get("hubLatitude")
+    hubLongitude=request.json.get("hubLongitude")
+    print(f"the hubLatitiude is{hubLatitude} and hubLongitude is {hubLongitude}")
+    if hubLatitude and hubLongitude:
+        return jsonify({"message": "Hub Address committed"}), 201
 
 @app.route("/create_dustbin", methods=["POST"])
 def create_dustbin():
@@ -125,7 +133,7 @@ if __name__ == "__main__":
         db.drop_all()
         db.create_all()
         print("Done 1")
-        create_dustbin_from_thingspeak()
+        #create_dustbin_from_thingspeak()
         print("Done 2")
     
     app.run(debug=True)
