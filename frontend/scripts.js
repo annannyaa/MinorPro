@@ -100,15 +100,6 @@ async function submitDustbin() {
   }
 }
 
-  
-  
-
-    
-        
-      
-
-
-
 // Function to fetch coordinates using Nominatim API based on the address
 function fetchCoordinatesFromAddress(address) {
   var url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=xml&polygon_kml=1&addressdetails=1`;
@@ -199,6 +190,40 @@ function modifyDustbin(id) {
   }
 }
 
+document.getElementById('checking').addEventListener('click', async function(event) {
+  // Prevent form submission if the button is inside a form (optional if not using form)
+  event.preventDefault();
+  var hubAddress = document.getElementById('hub-address').value;
+  if (hubAddress) {
+      console.log('Hub Address:', hubAddress); 
+      const hubLatLong= await fetchCoordinatesFromAddress(hubAddress);
+    //   if (hubLatLong) {
+    //     console.log('Hub Latitude:', hubLatLong.lat);
+    //     console.log('Hub Longitude:', hubLatLong.lon);
+    // } else {
+    //     console.log('Coordinates not found.');
+    // }
+    var data={
+      hubLatitude:hubLatLong.lat,
+      hubLongitude:hubLatLong.lon
+    }
+    const response = await fetch('http://127.0.0.1:5000/create_hub', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    if (response.status === 201) {
+      alert("Hub Address commited successfuly")
+    }
+    else {
+      alert('Failed to commit HubAddress')
+    }
+  } else {
+      alert('Please enter a valid address.');
+  }
+});
 
 
 function calculateOptimizedRoute() {
@@ -212,7 +237,6 @@ function calculateOptimizedRoute() {
     })
     .then(function (data) {
       var dustbins = data.dustbins;
-
       var dustbinsWithCoords = dustbins.filter(function (dustbin) {
         return dustbin.latitude && dustbin.longitude;
       });
@@ -221,16 +245,17 @@ function calculateOptimizedRoute() {
         return [parseFloat(dustbin.latitude), parseFloat(dustbin.longitude)];
       });
 
-      var data = {
+      var requestData = {
         dustbins: dustbinsWithCoords
       };
 
+      // Fetch optimized route data
       return fetch('http://127.0.0.1:5000/plan_optimized_route', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(requestData)
       })
         .then(function (response) {
           if (response.ok) {
@@ -240,24 +265,29 @@ function calculateOptimizedRoute() {
           }
         })
         .then(function (data) {
-          var optimizedRoute = data.optimized_route;
-          var optimizedRouteCoords = optimizedRoute.map(function (index) {
-            return dustbinsCoords[index];
+          var optimizedRoutes = data.optimized_routes;
+
+          // Clear previous content
+          document.getElementById('optimizedRouteSequence').innerHTML = '';
+
+          // Loop through each optimized route and display it
+          optimizedRoutes.forEach(function (optimizedRoute, routeIndex) {
+            var optimizedRouteCoords = optimizedRoute.map(function (index) {
+              return dustbinsCoords[index];  // Assuming dustbinsCoords is an array of coordinates
+            });
+
+            // Display the optimized route sequence for this cluster
+            var optimizedRouteSequence = optimizedRoute.join(' -> ');
+            var routeElement = document.createElement('p');
+            routeElement.textContent = `Route for cluster ${routeIndex + 1}: ${optimizedRouteSequence}`;
+            document.getElementById('optimizedRouteSequence').appendChild(routeElement);
           });
 
-          var optimizedRouteSequence = optimizedRoute.join(' -> ');
-          document.getElementById('optimizedRouteSequence').textContent = optimizedRouteSequence;
-
+          // Update the map iframe once after processing all routes
           const iframe = document.getElementById("mapContainer").querySelector("iframe");
           if (iframe) {
-            iframe.src = "http://127.0.0.1:5501/backend/route_map.html";
+            iframe.src = "http://127.0.0.1:5501/backend/route_map.html";  // Always load the updated map with all routes
           }
-
-
-          // Draw polyline for optimized route
-          // var optimizedRoutePolyline = L.polyline(optimizedRouteCoords, {color: 'red'}).addTo(map);
-          // map.fitBounds(optimizedRoutePolyline.getBounds());
-
         })
         .catch(function (error) {
           alert('An error occurred: ' + error);

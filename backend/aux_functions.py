@@ -6,6 +6,7 @@ from queue import PriorityQueue
 from flask import jsonify, request
 import folium
 import random
+from sklearn.cluster import KMeans
 API_KEY = "TkJNeMv0lEO00urfRPxkgCbaZvHpHCYp"
 
 class RoutingOptimizer:
@@ -80,13 +81,16 @@ class RoutingOptimizer:
         return heuristic_value
 
     def a_star(self, destinations):
-        # Initialize nodes and graph
+       # Initialize nodes and graph
         hub = {'latitude': float(self.hubLatitude), 'longitude': float(self.hubLongitude), 'deadline': datetime.now()}
-        destinations.insert(0, hub) 
+        destinations.insert(0, hub)  # Add the hub at the beginning
         G = nx.DiGraph()
+        
+        # Add nodes for each destination (including hub)
         for i, dest in enumerate(destinations):
             G.add_node(i, **dest)
 
+        # Add edges based on heuristic cost
         for start_idx, start_dest in enumerate(destinations):
             for end_idx, end_dest in enumerate(destinations):
                 if start_idx != end_idx:
@@ -94,10 +98,10 @@ class RoutingOptimizer:
                     G.add_edge(start_idx, end_idx, weight=heuristic_weight)
 
         all_paths = []
-        for start in range(1, len(destinations)):
+        for start in range(1, len(destinations)):  # Exclude the hub from the start
             try:
-                current_path = [0]
-                unvisited = set(range(1, len(destinations)))
+                current_path = [0]  # Start from the hub (index 0)
+                unvisited = set(range(1, len(destinations)))  # All other destinations
 
                 while unvisited:
                     next_dest = min(
@@ -108,7 +112,7 @@ class RoutingOptimizer:
                     unvisited.remove(next_dest)
 
                 path_cost = sum(
-                    self.heuristic_cost(destinations[current_path[i]], destinations[current_path[i+1]])
+                    self.heuristic_cost(destinations[current_path[i]], destinations[current_path[i + 1]])
                     for i in range(len(current_path) - 1)
                 )
 
@@ -119,7 +123,7 @@ class RoutingOptimizer:
 
         if all_paths:
             optimal_path, path_cost = min(all_paths, key=lambda x: x[1])
-            return optimal_path
+            return optimal_path  # Return indices relative to the destinations list (including hub)
 
         return None
 
@@ -157,59 +161,98 @@ def string_to_datetime(deadline_str):
     deadline_time = time(hour, minute)  # Create a time object
     return datetime.combine(today, deadline_time)  # Combine with today's date
 
+def kmeans_clustering(destinations, n_clusters):
+    coordinates = [(dest['latitude'], dest['longitude']) for dest in destinations]
+    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans.fit(coordinates)
+    labels = kmeans.labels_
+    
+    # Map each cluster to a list of (original_index, destination) pairs
+    clustered_dustbins = [[] for _ in range(n_clusters)]
+    for idx, label in enumerate(labels):
+        clustered_dustbins[label].append((idx, destinations[idx]))  # Keep track of the original index
+    
+    return clustered_dustbins
+
 def plan_optimized_route(dustbins, hubLatitude, hubLongitude):
     destinations = []
     for dustbin in dustbins:
-        print(dustbin)
-        latitude, longitude, deadline = dustbin  # Only latitude and longitude, ignoring capacity
-        # deadline = datetime.combine(datetime.today(), time(17, 0))  # Assuming 5:00 PM deadline
+        print(f"Processing dustbin: {dustbin}")
+        latitude, longitude, deadline = dustbin
         destinations.append({'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
-    print(f"printing from aux_functions: {hubLatitude} and {hubLongitude}")
 
+    clusters = kmeans_clustering(destinations, 2)
     optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ', hubLatitude, hubLongitude)
-    optimized_route = optimizer.a_star(destinations)
-    bins = []
-    print(f"OPT ROUTE IS {optimized_route}")
-    for bin_index in optimized_route:  
-        print(f"Bins : {bin_index}")
-        if bin_index==0:
-              bins.append((float(hubLatitude),float(hubLongitude)))
-        else:
-            print(f"{dustbins[bin_index-1][0]}, {dustbins[bin_index-1][1]}")  # Use bin_index to access dustbins
-            bins.append((dustbins[bin_index-1][0], dustbins[bin_index-1][1]))
+    optimized_routes = []
+    routes_coordinates = []  # List to store coordinates for each route
+    
+    hub_coords = (float(hubLatitude), float(hubLongitude))
+    
+    # Process each cluster as a separate route
+    for cluster_idx, cluster in enumerate(clusters):
+        print(f"Processing cluster {cluster_idx + 1} with {len(cluster)} points...")
+        cluster_destinations = [d[1] for d in cluster]
+        optimized_route = optimizer.a_star(cluster_destinations)
+        
+        if optimized_route:
+            route_coords = [hub_coords]  # Start with hub
             
-    generate_map_html(bins)  # Assuming this function takes the bins as coordinates
-    return optimized_route
+            # Add each destination in the optimized order
+            for bin_index in optimized_route[1:]:
+                if bin_index < len(cluster_destinations):
+                    dest = cluster_destinations[bin_index]
+                    coord = (dest['latitude'], dest['longitude'])
+                    route_coords.append(coord)
+            
+            routes_coordinates.append(route_coords)
+            optimized_routes.append(optimized_route)
+    
+    try:
+        print(routes_coordinates)
+        generate_map_html(routes_coordinates)
+    except Exception as e:
+        print(f"Error generating map: {e}")
+        
+    return optimized_routes
 
-def generate_map_html(transit_points = []):
-    # Plot the route using folium
-    # Start with the source location
-    if len(transit_points) == 0:
+def generate_map_html(routes = []):
+    if not routes or not routes[0]:
         return
 
-    map_route = folium.Map(location=transit_points[0], zoom_start=6)
-    colour_list = ["green", "blue", "yellow", "orange", "ping", "purple", "grey", "black", "brown"]
+    # Initialize the map at the hub location (first point of first route)
+    map_route = folium.Map(location=routes[0][0], zoom_start=12)
 
-    # Add markers
-    for idx, transit in enumerate(transit_points):
-        if idx == 0:
-            folium.Marker(location=transit, popup="Source", icon=folium.Icon(color="red")).add_to(map_route)
-        elif idx == len(transit_points) - 1:
-            folium.Marker(location=transit, popup="Destination", icon=folium.Icon(color="red")).add_to(map_route)
-        else:
-            folium.Marker(location=transit, popup="Transit", icon=folium.Icon(color=random.choice(colour_list))).add_to(map_route)
+    # Define distinct colors for routes
+    colours = ["blue", "red", "green", "purple", "orange", "darkred", "lightred", "beige", "darkblue", "darkgreen"]
 
-    colour_list = ["green", "yellow", "orange", "ping", "purple", "grey", "black", "brown"]
+    # Process each route with its own color
+    for route_idx, route_coords in enumerate(routes):
+        route_color = colours[route_idx % len(colours)]  # Cycle through colors if more routes than colors
+        
+        # Add markers for each coordinate in the route
+        for idx, coord in enumerate(route_coords):
+            if idx == 0:  # Only the starting point is hub
+                folium.Marker(
+                    location=coord,
+                    popup="Hub",
+                    icon=folium.Icon(color='red')
+                ).add_to(map_route)
+            else:
+                # Mark transit points with route-specific color
+                folium.Marker(
+                    location=coord,
+                    popup=f"Route {route_idx + 1} - Stop {idx}",
+                    icon=folium.Icon(color=route_color)
+                ).add_to(map_route)
 
-    # Add the route line
-    for idx, transit in enumerate(transit_points):
-        if idx == len(transit_points) - 1:
-            break
-        if idx == 0:
-            folium.PolyLine(locations=get_coordinates(transit_points[idx], transit_points[idx+1]), color="blue", weight=5).add_to(map_route)
-        else:
-            folium.PolyLine(locations=get_coordinates(transit_points[idx], transit_points[idx+1]), color=random.choice(colour_list), weight=5).add_to(map_route)
+        # Add route lines with matching color
+        folium.PolyLine(
+            locations=route_coords,
+            color=route_color,
+            weight=5,
+            popup=f"Route {route_idx + 1}"
+        ).add_to(map_route)
 
-    # Save map to HTML and display
+    # Save the map to an HTML file
     map_route.save("route_map.html")
     print("Map saved as route_map.html. Open it in your browser.")

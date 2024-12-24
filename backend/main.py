@@ -4,6 +4,7 @@ from models import Dustbin
 import aux_functions
 import thingspeak, os
 from flask import send_from_directory, Flask, send_file
+
 hubLatitude = None
 hubLongitude = None
 
@@ -25,7 +26,7 @@ def plan_optimized_route_handler():
     #print(f"Printing from plan_optimized_route_handler: {hubLatitude} and {hubLongitude}")
     dustbins_data = request.json.get("dustbins")
     dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
-    optimized_route = aux_functions.plan_optimized_route(dustbins, hubLatitude, hubLongitude)
+    optimized_routes = aux_functions.plan_optimized_route(dustbins, hubLatitude, hubLongitude)
     
     """
         input change to 3 params : [lat(float), long(float), deadline(minutes/hours/int)]
@@ -38,9 +39,7 @@ def plan_optimized_route_handler():
 
 
     """
-
-    
-    return jsonify({"optimized_route": optimized_route}), 200
+    return jsonify({"optimized_route": optimized_routes}), 200
 
 @app.route("/route_map")
 def serve_route_map():
