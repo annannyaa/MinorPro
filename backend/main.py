@@ -56,6 +56,7 @@ def get_dustbins():
 
 @app.route("/create_dustbin", methods=["POST"])
 def create_dustbin():
+    address = request.json.get("address")
     latitude = request.json.get("latitude")
     longitude = request.json.get("longitude")
     capacity = request.json.get("capacity")
@@ -66,7 +67,7 @@ def create_dustbin():
             400,
         )
 
-    new_dustbin = Dustbin(latitude=latitude, longitude=longitude, capacity=capacity)
+    new_dustbin = Dustbin(address=address,latitude=latitude, longitude=longitude, capacity=capacity)
     try:
         db.session.add(new_dustbin)
         db.session.commit()
