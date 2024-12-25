@@ -253,12 +253,13 @@ def generate_map_html(routes = []):
                 ).add_to(map_route)
 
         # Add route lines with matching color
-        folium.PolyLine(
-            locations=route_coords,
-            color=route_color,
-            weight=5,
-            popup=f"Route {route_idx + 1}"
-        ).add_to(map_route)
+        for idx, coord in enumerate(route_coords):
+            if idx == len(route_coords) - 1:
+                break   
+            if idx == 0:
+                folium.PolyLine(locations=get_coordinates(route_coords[idx], route_coords[idx+1]), color="blue", weight=5).add_to(map_route)
+            else:
+                folium.PolyLine(locations=get_coordinates(route_coords[idx], route_coords[idx+1]), color=random.choice(colours), weight=5).add_to(map_route)
 
     # Save the map to an HTML file
     map_route.save("route_map.html")
