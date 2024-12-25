@@ -222,45 +222,35 @@ def plan_optimized_route(dustbins, hubLatitude, hubLongitude, numRoutes):
     #return optimized_routes
     return check
 
-def generate_map_html(routes = []):
+def generate_map_html(routes):
     if not routes or not routes[0]:
         return
 
-    # Initialize the map at the hub location (first point of first route)
     map_route = folium.Map(location=routes[0][0], zoom_start=12)
 
-    # Define distinct colors for routes
-    colours = ["blue", "red", "green", "purple", "orange", "darkred", "lightred", "beige", "darkblue", "darkgreen"]
+    colors = ["blue", "red", "green", "purple", "orange", "darkred", "pink", "lightred", "beige", "darkblue", "darkgreen"]
 
-    # Process each route with its own color
     for route_idx, route_coords in enumerate(routes):
-        route_color = colours[route_idx % len(colours)]  # Cycle through colors if more routes than colors
+        route_color = colors[route_idx % len(colors)]
         
-        # Add markers for each coordinate in the route
         for idx, coord in enumerate(route_coords):
-            if idx == 0:  # Only the starting point is hub
+            if idx == 0:
                 folium.Marker(
                     location=coord,
                     popup="Hub",
                     icon=folium.Icon(color='red')
                 ).add_to(map_route)
             else:
-                # Mark transit points with route-specific color
                 folium.Marker(
                     location=coord,
                     popup=f"Route {route_idx + 1} - Stop {idx}",
                     icon=folium.Icon(color=route_color)
                 ).add_to(map_route)
-
-        # Add route lines with matching color
+                
         for idx, coord in enumerate(route_coords):
             if idx == len(route_coords) - 1:
                 break   
-            if idx == 0:
-                folium.PolyLine(locations=get_coordinates(route_coords[idx], route_coords[idx+1]), color="blue", weight=5).add_to(map_route)
-            else:
-                folium.PolyLine(locations=get_coordinates(route_coords[idx], route_coords[idx+1]), color=random.choice(colours), weight=5).add_to(map_route)
+            folium.PolyLine(locations=get_coordinates(route_coords[idx], route_coords[idx+1]), color=route_color, weight=5).add_to(map_route)
 
-    # Save the map to an HTML file
     map_route.save("route_map.html")
     print("Map saved as route_map.html. Open it in your browser.")
