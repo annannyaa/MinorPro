@@ -174,18 +174,18 @@ def kmeans_clustering(destinations, n_clusters):
     
     return clustered_dustbins
 
-def plan_optimized_route(dustbins, hubLatitude, hubLongitude):
+def plan_optimized_route(dustbins, hubLatitude, hubLongitude, numRoutes):
     destinations = []
     for dustbin in dustbins:
         print(f"Processing dustbin: {dustbin}")
-        latitude, longitude, deadline = dustbin
-        destinations.append({'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
+        id,latitude, longitude, deadline = dustbin
+        destinations.append({'id':id,'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
 
-    clusters = kmeans_clustering(destinations, 2)
+    clusters = kmeans_clustering(destinations, int(numRoutes))
     optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ', hubLatitude, hubLongitude)
     optimized_routes = []
     routes_coordinates = []  # List to store coordinates for each route
-
+    check = []
     hub_coords = (float(hubLatitude), float(hubLongitude))
 
     # Process each cluster as a separate route
@@ -196,19 +196,21 @@ def plan_optimized_route(dustbins, hubLatitude, hubLongitude):
 
         if optimized_route:
             route_coords = [hub_coords]  # Start with hub
-
             # Add each destination in the optimized order
+            checks=[]
             for bin_index in optimized_route[1:]:
                 if bin_index < len(cluster_destinations):
                     dest = cluster_destinations[bin_index]
                     coord = (dest['latitude'], dest['longitude'])
                     route_coords.append(coord)
+                    checks.append(dest['id'])
 
             routes_coordinates.append(route_coords)
             optimized_routes.append(optimized_route)
+            check.append(checks)
 
     try:
-
+        print(check)
         print(optimized_routes) # [[0, 1], [0, 1]]
         print(optimized_routes[0]) #[0, 1]
         print(optimized_routes[0][0]) # 0
@@ -217,7 +219,8 @@ def plan_optimized_route(dustbins, hubLatitude, hubLongitude):
     except Exception as e:
         print(f"Error generating map: {e}")
 
-    return optimized_routes
+    #return optimized_routes
+    return check
 
 def generate_map_html(routes = []):
     if not routes or not routes[0]:

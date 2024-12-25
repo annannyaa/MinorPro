@@ -194,6 +194,7 @@ document.getElementById('checking').addEventListener('click', async function (ev
   // Prevent form submission if the button is inside a form (optional if not using form)
   event.preventDefault();
   var hubAddress = document.getElementById('hub-address').value;
+  var numRoutes = document.getElementById('numRoutes').value
   if (hubAddress) {
     console.log('Hub Address:', hubAddress);
     const hubLatLong = await fetchCoordinatesFromAddress(hubAddress);
@@ -205,7 +206,8 @@ document.getElementById('checking').addEventListener('click', async function (ev
     // }
     var data = {
       hubLatitude: hubLatLong.lat,
-      hubLongitude: hubLatLong.lon
+      hubLongitude: hubLatLong.lon,
+      numRoutes : numRoutes
     }
     const response = await fetch('http://127.0.0.1:5000/create_hub', {
       method: 'POST',
@@ -272,7 +274,8 @@ function calculateOptimizedRoute() {
 
           // Loop through each optimized route and display it
           optimizedRoutes.forEach(function (optimizedRoute, routeIndex) {
-            var optimizedRouteSequence = optimizedRoute.join(' -> ');
+            var optimizedRouteWithHub = ['Hub', ...optimizedRoute];
+            var optimizedRouteSequence = optimizedRouteWithHub.join(' -> ');
             var routeElement = document.createElement('p');
             routeElement.textContent = `Route for cluster ${routeIndex + 1}: ${optimizedRouteSequence}`;
             document.getElementById('optimizedRouteSequence').appendChild(routeElement);

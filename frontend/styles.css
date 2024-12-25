@@ -104,7 +104,7 @@ input[readonly] {
   margin-top: 20px;
 }
 
-#checking{
+#checking, #submitNumRoutes{
   font-family: 'Lora', serif;
   font-weight: 600;
   font-size: 14px;  /* A little smaller font size */

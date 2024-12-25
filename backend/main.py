@@ -7,7 +7,7 @@ from flask import send_from_directory, Flask, send_file
 
 hubLatitude = None
 hubLongitude = None
-
+numRoutes = None
 
 @app.route("/")
 def serve_frontend():
@@ -20,13 +20,13 @@ def serve_static(path):
 
 @app.route("/plan_optimized_route", methods=["POST"])
 def plan_optimized_route_handler():
-    global hubLatitude, hubLongitude
-    if hubLatitude is None or hubLongitude is None:
-        return jsonify({"message": "Hub address not available"}), 400
+    global hubLatitude, hubLongitude, numRoutes
+    if hubLatitude is None or hubLongitude is None or numRoutes is None:
+        return jsonify({"message": "Hub or number of routes address not available"}), 400
     #print(f"Printing from plan_optimized_route_handler: {hubLatitude} and {hubLongitude}")
     dustbins_data = request.json.get("dustbins")
-    dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
-    optimized_routes = aux_functions.plan_optimized_route(dustbins, hubLatitude, hubLongitude)
+    dustbins = [(d.get('id'),d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
+    optimized_routes = aux_functions.plan_optimized_route(dustbins, hubLatitude, hubLongitude, numRoutes)
     return jsonify({"optimized_route": optimized_routes }), 200
 
 @app.route("/route_map")
@@ -42,10 +42,11 @@ def get_dustbins():
 
 @app.route("/create_hub", methods=["POST"])
 def print_hub():
-    global hubLatitude, hubLongitude
+    global hubLatitude, hubLongitude, numRoutes
     hubLatitude=request.json.get("hubLatitude")
     hubLongitude=request.json.get("hubLongitude")
-    print(f"the hubLatitiude is{hubLatitude} and hubLongitude is {hubLongitude}")
+    numRoutes=request.json.get('numRoutes')
+    print(f"the hubLatitiude is{hubLatitude} and hubLongitude is {hubLongitude}, and numRoutes are {numRoutes}")
     if hubLatitude and hubLongitude:
         return jsonify({"message": "Hub Address committed"}), 201
 
