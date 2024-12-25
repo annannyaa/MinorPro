@@ -185,34 +185,38 @@ def plan_optimized_route(dustbins, hubLatitude, hubLongitude):
     optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ', hubLatitude, hubLongitude)
     optimized_routes = []
     routes_coordinates = []  # List to store coordinates for each route
-    
+
     hub_coords = (float(hubLatitude), float(hubLongitude))
-    
+
     # Process each cluster as a separate route
     for cluster_idx, cluster in enumerate(clusters):
         print(f"Processing cluster {cluster_idx + 1} with {len(cluster)} points...")
         cluster_destinations = [d[1] for d in cluster]
         optimized_route = optimizer.a_star(cluster_destinations)
-        
+
         if optimized_route:
             route_coords = [hub_coords]  # Start with hub
-            
+
             # Add each destination in the optimized order
             for bin_index in optimized_route[1:]:
                 if bin_index < len(cluster_destinations):
                     dest = cluster_destinations[bin_index]
                     coord = (dest['latitude'], dest['longitude'])
                     route_coords.append(coord)
-            
+
             routes_coordinates.append(route_coords)
             optimized_routes.append(optimized_route)
-    
+
     try:
-        print(routes_coordinates)
+
+        print(optimized_routes) # [[0, 1], [0, 1]]
+        print(optimized_routes[0]) #[0, 1]
+        print(optimized_routes[0][0]) # 0
+        print(routes_coordinates) # [[(28.5790689, 77.0654186), (28.6018747, 77.3259814)], [(28.5790689, 77.0654186), (28.4646148, 77.0299194)]]
         generate_map_html(routes_coordinates)
     except Exception as e:
         print(f"Error generating map: {e}")
-        
+
     return optimized_routes
 
 def generate_map_html(routes = []):

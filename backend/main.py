@@ -27,19 +27,7 @@ def plan_optimized_route_handler():
     dustbins_data = request.json.get("dustbins")
     dustbins = [(d.get('latitude'), d.get('longitude'), d.get('capacity')) for d in dustbins_data]
     optimized_routes = aux_functions.plan_optimized_route(dustbins, hubLatitude, hubLongitude)
-    
-    """
-        input change to 3 params : [lat(float), long(float), deadline(minutes/hours/int)]
-        tom_tom_api call with
-            input params : [lat, long, unit(kmph), openLR(static), key(secret key)]
-            output : [flow_segment_data : {"free_flow_speed":"", "current_speed": ""}]
-            
-        current_speed:
-        
-
-
-    """
-    return jsonify({"optimized_route": optimized_routes}), 200
+    return jsonify({"optimized_route": optimized_routes }), 200
 
 @app.route("/route_map")
 def serve_route_map():

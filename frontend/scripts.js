@@ -190,22 +190,22 @@ function modifyDustbin(id) {
   }
 }
 
-document.getElementById('checking').addEventListener('click', async function(event) {
+document.getElementById('checking').addEventListener('click', async function (event) {
   // Prevent form submission if the button is inside a form (optional if not using form)
   event.preventDefault();
   var hubAddress = document.getElementById('hub-address').value;
   if (hubAddress) {
-      console.log('Hub Address:', hubAddress); 
-      const hubLatLong= await fetchCoordinatesFromAddress(hubAddress);
+    console.log('Hub Address:', hubAddress);
+    const hubLatLong = await fetchCoordinatesFromAddress(hubAddress);
     //   if (hubLatLong) {
     //     console.log('Hub Latitude:', hubLatLong.lat);
     //     console.log('Hub Longitude:', hubLatLong.lon);
     // } else {
     //     console.log('Coordinates not found.');
     // }
-    var data={
-      hubLatitude:hubLatLong.lat,
-      hubLongitude:hubLatLong.lon
+    var data = {
+      hubLatitude: hubLatLong.lat,
+      hubLongitude: hubLatLong.lon
     }
     const response = await fetch('http://127.0.0.1:5000/create_hub', {
       method: 'POST',
@@ -221,7 +221,7 @@ document.getElementById('checking').addEventListener('click', async function(eve
       alert('Failed to commit HubAddress')
     }
   } else {
-      alert('Please enter a valid address.');
+    alert('Please enter a valid address.');
   }
 });
 
@@ -265,18 +265,13 @@ function calculateOptimizedRoute() {
           }
         })
         .then(function (data) {
-          var optimizedRoutes = data.optimized_routes;
+          var optimizedRoutes = data.optimized_route;
 
           // Clear previous content
           document.getElementById('optimizedRouteSequence').innerHTML = '';
 
           // Loop through each optimized route and display it
           optimizedRoutes.forEach(function (optimizedRoute, routeIndex) {
-            var optimizedRouteCoords = optimizedRoute.map(function (index) {
-              return dustbinsCoords[index];  // Assuming dustbinsCoords is an array of coordinates
-            });
-
-            // Display the optimized route sequence for this cluster
             var optimizedRouteSequence = optimizedRoute.join(' -> ');
             var routeElement = document.createElement('p');
             routeElement.textContent = `Route for cluster ${routeIndex + 1}: ${optimizedRouteSequence}`;
