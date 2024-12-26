@@ -11,47 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
   loadDustbins();
 });
 
-// function submitDustbin() {
-//   var address = document.getElementById('address').value;
-//   console.log(address);
-//   var latitude = document.getElementById('latitude').value;
-//   console.log('latitude');
-//   var longitude = document.getElementById('longitude').value;
-//   var capacity = document.getElementById('capacity').value;
-
-
-//   if (!latitude || !longitude || !capacity) {
-//     alert('Please fill in all fields.');
-//     return;
-//   }
-
-//   var data = {
-//     latitude: latitude,
-//     longitude: longitude,
-//     capacity: capacity
-//   };
-
-//   fetch('http://127.0.0.1:5000/create_dustbin', {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/json'
-//     },
-//     body: JSON.stringify(data)
-//   })
-//   .then(function(response) {
-//     if (response.status === 201) {
-//       alert('Dustbin created successfully!');
-//       clearFields();
-//       loadDustbins();
-//     } else {
-//       alert('Failed to create dustbin.');
-//     }
-//   })
-//   .catch(function(error) {
-//     alert('An error occurred: ' + error);
-//   });
-// }
-
 async function submitDustbin() {
   var address = document.getElementById('address').value;
   var capacity = document.getElementById('capacity').value;
@@ -85,11 +44,11 @@ async function submitDustbin() {
 
       // Check the response status
       if (response.status === 201) {
-        alert('Dustbin created successfully!');
+        alert('Drop-point added successfully!');
         loadDustbins();  // Refresh the dustbins list after creation
         clearFields();  // Clear the fields only after the dustbin is created
       } else {
-        alert('Failed to create dustbin.');
+        alert('Failed to add drop-point.');
       }
     } else {
       alert('Failed to get coordinates for the address.');
@@ -124,7 +83,6 @@ function fetchCoordinatesFromAddress(address) {
       return null;
     });
 }
-
 
 function loadDustbins() {
   fetch('http://127.0.0.1:5000/dustbins')
