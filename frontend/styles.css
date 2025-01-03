@@ -312,8 +312,8 @@ button[type="submit"]:hover, .optimizedRouteContainer .button:hover, .wow:hover 
   background-color: #f0f0f0; 
   color: #888; 
 } */
-/* Dustbin styling */
-.dustbin {
+/* Destination styling */
+.destination {
   border: 1px solid #ddd;
   padding: 10px;
   margin: 10px 0;

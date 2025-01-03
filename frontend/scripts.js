@@ -1,22 +1,22 @@
 document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('dustbinForm').addEventListener('submit', function (event) {
+  document.getElementById('destinationForm').addEventListener('submit', function (event) {
     event.preventDefault();
-    submitDustbin();
+    submitDestination();
   });
 
   document.getElementById('calculateRouteButton').addEventListener('click', function () {
     calculateOptimizedRoute();
   });
 
-  loadDustbins();
+  loadDestinations();
 });
 
-async function submitDustbin() {
+async function submitDestination() {
   var address = document.getElementById('address').value;
-  var capacity = document.getElementById('capacity').value;
+  var deadline = document.getElementById('deadline').value;
 
-  // If address or capacity is not provided, show an alert
-  if (!address || !capacity) {
+  // If address or deadline is not provided, show an alert
+  if (!address || !deadline) {
     alert('Please fill in all fields.');
     return;
   }
@@ -30,11 +30,11 @@ async function submitDustbin() {
         address: address,
         latitude: coordinates.lat,
         longitude: coordinates.lon,
-        capacity: capacity
+        deadline: deadline
       };
 
-      // Send the dustbin data to the server
-      const response = await fetch('http://127.0.0.1:5000/create_dustbin', {
+      
+      const response = await fetch('http://127.0.0.1:5000/create_destination', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -45,8 +45,8 @@ async function submitDustbin() {
       // Check the response status
       if (response.status === 201) {
         alert('Drop-point added successfully!');
-        loadDustbins();  // Refresh the dustbins list after creation
-        clearFields();  // Clear the fields only after the dustbin is created
+        loadDestinations();  // Refresh the destinations list after creation
+        clearFields();  // Clear the fields only after the destination is created
       } else {
         alert('Failed to add drop-point.');
       }
@@ -84,30 +84,30 @@ function fetchCoordinatesFromAddress(address) {
     });
 }
 
-function loadDustbins() {
-  fetch('http://127.0.0.1:5000/dustbins')
+function loadDestinations() {
+  fetch('http://127.0.0.1:5000/destinations')
     .then(function (response) {
       if (response.ok) {
         return response.json();
       } else {
-        throw new Error('Failed to fetch dustbins.');
+        throw new Error('Failed to fetch destinations.');
       }
     })
     .then(function (data) {
-      var dustbinsContainer = document.getElementById('dustbinsContainer');
-      dustbinsContainer.innerHTML = '';
+      var availableDestinationsContainer = document.getElementById('availableDestinationsContainer');
+      availableDestinationsContainer.innerHTML = '';
 
-      data.dustbins.forEach(function (dustbin) {
-        var dustbinElement = document.createElement('div');
-        dustbinElement.classList.add('dustbin');
-        dustbinElement.innerHTML = `
-          <p><strong>ID:</strong> ${dustbin.id}
-          <strong>Address:</strong> ${dustbin.address}
-          <strong>Latitude:</strong> ${dustbin.latitude}
-          <strong>Longitude:</strong> ${dustbin.longitude}
-          <strong>Deadline:</strong> ${dustbin.capacity}</p>
+      data.destinations.forEach(function (dest) {
+        var destinationElement = document.createElement('div');
+        destinationElement.classList.add('destination');
+        destinationElement.innerHTML = `
+          <p><strong>ID:</strong> ${dest.id}
+          <strong>Address:</strong> ${dest.address}
+          <strong>Latitude:</strong> ${dest.latitude}
+          <strong>Longitude:</strong> ${dest.longitude}
+          <strong>Deadline:</strong> ${dest.deadline}</p>
         `;
-        dustbinsContainer.appendChild(dustbinElement);
+        availableDestinationsContainer.appendChild(destinationElement);
       });
     })
     .catch(function (error) {
@@ -115,19 +115,19 @@ function loadDustbins() {
     });
 }
 
-function modifyDustbin(id) {
+function modifyDestination(id) {
   var latitude = prompt('Enter new latitude:');
   var longitude = prompt('Enter new longitude:');
-  var capacity = prompt('Enter new capacity:');
+  var deadline = prompt('Enter new deadline:');
 
-  if (latitude !== null && longitude !== null && capacity !== null) {
+  if (latitude !== null && longitude !== null && deadline !== null) {
     var data = {
       latitude: latitude,
       longitude: longitude,
-      capacity: capacity
+      deadline: deadline
     };
 
-    fetch(`http://127.0.0.1:5000/update_dustbin/${id}`, {
+    fetch(`http://127.0.0.1:5000/update_destination/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -136,10 +136,10 @@ function modifyDustbin(id) {
     })
       .then(function (response) {
         if (response.ok) {
-          alert('Dustbin modified successfully!');
-          loadDustbins();
+          alert('Destination modified successfully!');
+          loadDestinations();
         } else {
-          throw new Error('Failed to modify dustbin.');
+          throw new Error('Failed to modify destination.');
         }
       })
       .catch(function (error) {
@@ -187,26 +187,26 @@ document.getElementById('checking').addEventListener('click', async function (ev
 
 
 function calculateOptimizedRoute() {
-  fetch('http://127.0.0.1:5000/dustbins')
+  fetch('http://127.0.0.1:5000/destinations')
     .then(function (response) {
       if (response.ok) {
         return response.json();
       } else {
-        throw new Error('Failed to fetch dustbins.');
+        throw new Error('Failed to fetch destinations.');
       }
     })
     .then(function (data) {
-      var dustbins = data.dustbins;
-      var dustbinsWithCoords = dustbins.filter(function (dustbin) {
-        return dustbin.latitude && dustbin.longitude;
+      var destinations = data.destinations;
+      var destinationsWithCoords = destinations.filter(function (dest) {
+        return dest.latitude && dest.longitude;
       });
 
-      var dustbinsCoords = dustbinsWithCoords.map(function (dustbin) {
-        return [parseFloat(dustbin.latitude), parseFloat(dustbin.longitude)];
+      var destinationCoords = destinationsWithCoords.map(function (dest) {
+        return [parseFloat(dest.latitude), parseFloat(dest.longitude)];
       });
 
       var requestData = {
-        dustbins: dustbinsWithCoords
+        destinations: destinationsWithCoords
       };
 
       // Fetch optimized route data
@@ -254,17 +254,17 @@ function calculateOptimizedRoute() {
     });
 }
 
-function deleteDustbin(id) {
-  if (confirm("Are you sure you want to delete this dustbin?")) {
-    fetch(`http://127.0.0.1:5000/delete_dustbin/${id}`, {
+function deleteDestination(id) {
+  if (confirm("Are you sure you want to delete this destination?")) {
+    fetch(`http://127.0.0.1:5000/delete_destination/${id}`, {
       method: 'DELETE'
     })
       .then(function (response) {
         if (response.ok) {
-          alert('Dustbin deleted successfully!');
-          loadDustbins(); // Reload dustbins after deletion
+          alert('Destination deleted successfully!');
+          loadDestinations(); 
         } else {
-          throw new Error('Failed to delete dustbin.');
+          throw new Error('Failed to delete destination.');
         }
       })
       .catch(function (error) {
@@ -275,7 +275,7 @@ function deleteDustbin(id) {
 
 function clearFields() {
   document.getElementById('address').value = '';
-  document.getElementById('capacity').value = '';
+  document.getElementById('deadline').value = '';
 }
 
 var map = L.map('map').setView([13.04, 80.22], 12);

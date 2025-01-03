@@ -163,23 +163,26 @@ def string_to_datetime(deadline_str):
 
 def kmeans_clustering(destinations, n_clusters):
     coordinates = [(dest['latitude'], dest['longitude']) for dest in destinations]
+    print(f'coordinates:{coordinates}')
     kmeans = KMeans(n_clusters=n_clusters)
     kmeans.fit(coordinates)
     labels = kmeans.labels_
     
     # Map each cluster to a list of (original_index, destination) pairs
-    clustered_dustbins = [[] for _ in range(n_clusters)]
+    clustered_destinations = [[] for _ in range(n_clusters)]
     for idx, label in enumerate(labels):
-        clustered_dustbins[label].append((idx, destinations[idx]))  # Keep track of the original index
+        clustered_destinations[label].append((idx, destinations[idx]))  # Keep track of the original index
     
-    return clustered_dustbins
+    return clustered_destinations
 
-def plan_optimized_route(dustbins, hubLatitude, hubLongitude, numRoutes):
+def plan_optimized_route(allDestinations, hubLatitude, hubLongitude, numRoutes):
+    print(f"allDestinations:{allDestinations}")
     destinations = []
-    for dustbin in dustbins:
-        print(f"Processing dustbin: {dustbin}")
-        id,latitude, longitude, deadline = dustbin
+    for destination in allDestinations:
+        print(f"Processing destination: {destination}")
+        id,latitude, longitude, deadline = destination
         destinations.append({'id':id,'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
+    print(destinations)
 
     clusters = kmeans_clustering(destinations, int(numRoutes))
     optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ', hubLatitude, hubLongitude)
