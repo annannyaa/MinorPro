@@ -163,7 +163,6 @@ def string_to_datetime(deadline_str):
 
 def kmeans_clustering(destinations, n_clusters):
     coordinates = [(dest['latitude'], dest['longitude']) for dest in destinations]
-    print(f'coordinates:{coordinates}')
     kmeans = KMeans(n_clusters=n_clusters)
     kmeans.fit(coordinates)
     labels = kmeans.labels_
@@ -176,13 +175,12 @@ def kmeans_clustering(destinations, n_clusters):
     return clustered_destinations
 
 def plan_optimized_route(allDestinations, hubLatitude, hubLongitude, numRoutes):
-    print(f"allDestinations:{allDestinations}")
+    #print(f"allDestinations:{allDestinations}")
     destinations = []
     for destination in allDestinations:
-        print(f"Processing destination: {destination}")
+        #print(f"Processing destination: {destination}")
         id,latitude, longitude, deadline = destination
         destinations.append({'id':id,'latitude': float(latitude), 'longitude': float(longitude), 'deadline': string_to_datetime(deadline)})
-    print(destinations)
 
     clusters = kmeans_clustering(destinations, int(numRoutes))
     optimizer = RoutingOptimizer('mTrA9kG5mGHYEIBmGPkwvCIAQ0DlARhJ', hubLatitude, hubLongitude)
@@ -213,11 +211,7 @@ def plan_optimized_route(allDestinations, hubLatitude, hubLongitude, numRoutes):
             check.append(checks)
 
     try:
-        print(check)
-        print(optimized_routes) # [[0, 1], [0, 1]]
-        print(optimized_routes[0]) #[0, 1]
-        print(optimized_routes[0][0]) # 0
-        print(routes_coordinates) # [[(28.5790689, 77.0654186), (28.6018747, 77.3259814)], [(28.5790689, 77.0654186), (28.4646148, 77.0299194)]]
+        print(routes_coordinates) 
         generate_map_html(routes_coordinates)
     except Exception as e:
         print(f"Error generating map: {e}")
